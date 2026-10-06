@@ -44,3 +44,13 @@ npm run dev
 
 Les téléchargements sont enregistrés dans `data/media/` et leur état dans `data/downloads.sqlite`. `npm run typecheck`, `npm test` et `npm run build` vérifient le projet.
 
+## Déploiement
+
+Le frontend est publié sur GitHub Pages : <https://ferelking242.github.io/brazzer-dl/>. Le workflow `.github/workflows/deploy-pages.yml` reconstruit et redéploie à chaque push sur `main`.
+
+Pour relier le site hébergé à un backend :
+
+1. Exposez l'API sur une adresse HTTPS publique (`HOST=0.0.0.0`, `API_PORT` ou `PORT`).
+2. Autorisez l'origine du site avec `CORS_ORIGINS` (par défaut : `https://ferelking242.github.io`).
+3. Renseignez cette adresse dans **Réglages → Connexion au backend** : elle est mémorisée dans le navigateur. `VITE_API_BASE_URL` peut fournir une valeur par défaut à la construction.
+
