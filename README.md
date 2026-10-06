@@ -1,36 +1,46 @@
 # brazzer-dl
 
-Gestionnaire vidéo local : file d'attente de **liens HTTPS directs** vers des fichiers vidéo publics (vos propres exports, contenus sous licence ouverte, CDN public), avec reprise et bibliothèque.
+Téléchargeur local pour Brazzers : file d’attente, reprise et déduplication des téléchargements.
 
-L'interface est une bibliothèque locale, sans compte à créer.
+## État du projet
 
-## Ce que l'application fait (et ne fait pas)
+L’application fournit une interface de file d’attente et un moteur de téléchargement pour des liens directs compatibles. La connexion à un compte Brazzers et l’accès aux vidéos VIP ne sont pas implémentés.
 
-Fait :
+Site à évaluer : `https://site-ma.brazzers.com/scenes?addon=162`
 
-- Bibliothèque locale de fichiers vidéo, file d'attente avec concurrence limitée, liste des fichiers enregistrés.
-- Vue **Paramètres** : stockage, règles de téléchargement (concurrence, taille max, reprise partielle), confidentialité, état du service.
-- Liens directs HTTPS vers des fichiers MP4, WebM, MOV ou MKV, sans paramètres signés.
-- Vérification de sécurité : refus des hostnames locaux, adresses IP, redirections cross-origin, fichiers de plus de 5 Go.
+Un abonnement VIP ne confirme pas, à lui seul, le droit de copier les vidéos. Avant toute intégration, il faut vérifier les conditions du site et l’existence d’une fonction de téléchargement ou d’une API officielle autorisée. L’accès aux vidéos et la possibilité de les télécharger sont deux choses distinctes.
 
-Ne fait pas (et ne fera pas) :
+## Stack retenue
 
-- Se connecter à Brazzers, BangBros ou tout autre site protégé par identification, ni télécharger leurs vidéos d'abonnement VIP.
-- Extraire des cookies, sniffer des sessions, contourner un DRM ou un paywall.
-- Utiliser `yt-dlp` ou tout extracteur de flux.
+- **Node.js 24 + TypeScript** : même langage côté interface et serveur, types partagés et runtime déjà disponible dans l’environnement.
+- **React + Vite** : interface locale pour la bibliothèque, la file d’attente et l’avancement des tâches.
+- **Tailwind CSS + primitives Radix UI + Lucide React** : composants gratuits et open source.
+- **Fastify** : API locale légère entre l’interface et le gestionnaire de téléchargements.
+- **SQLite** : persistance locale des métadonnées, de l’état des tâches et de leur reprise après redémarrage.
+- **File d’attente persistante avec concurrence limitée** : démarrer avec un seul téléchargement à la fois; permettre pause, reprise, annulation, reprise sur erreur et déduplication.
+- **Système de fichiers local** : destination choisie par l’utilisateur, avec vérification de l’espace disponible et noms de fichiers sûrs.
 
-Un abonnement payant ne donne pas le droit de copier ou redistribuer les vidéos d'un site. Cette application reste volontairement limitée aux liens directs publics.
+En développement, l’interface écoute sur le port `5000` et transmet les appels `/api` au serveur local sur `127.0.0.1:3001`. Redis, PostgreSQL et une architecture cloud ne sont pas nécessaires pour ce premier périmètre.
 
-## Stack
+La file accepte une URL à la fois, démarre avec une seule tâche concurrente, conserve son état dans SQLite et reprend les fichiers partiels lorsque le serveur supporte les requêtes `Range`.
 
-- **Node.js 24 + TypeScript**, **React + Vite**, **Radix UI + Tailwind CSS + Lucide**, **Fastify**, **SQLite** (better-sqlite3).
+## Intégration au site
 
-En développement, `npm run dev` construit l'interface et lance un unique process Fastify qui sert à la fois l'UI (`dist/`) et l'API sur le port `5000` (ou le `PORT` injecté par l'hébergeur). Les téléchargements sont dans `data/media/`, l'état dans `data/downloads.sqlite`.
+L’application ne se connecte pas à Brazzers. Le bouton du site ouvre une page externe; il ne partage pas la session du navigateur avec l’application.
 
-## Vérifications
+- Les liens Brazzers et sous-domaines sont bloqués.
+- Seuls les liens HTTPS directs vers des fichiers vidéo MP4, WebM, MOV, M4V ou MKV sont acceptés; pas de cookies, de paramètres signés ou de lien qui exige une authentification.
+- Les adresses IP/locales, réponses qui ne sont pas des vidéos, redirections vers un autre hôte et fichiers de plus de 5 Go sont refusés.
+- Il n’y a ni formulaire de mot de passe, ni extraction de cookies, ni contournement DRM/paywall.
+- `yt-dlp` n’est pas une dépendance de l’application.
+
+Un abonnement VIP ne confirme pas, à lui seul, le droit de copier les vidéos. Une intégration au site ne pourra être ajoutée qu’après confirmation d’un mécanisme officiel et autorisé.
+
+## Lancer en développement
 
 ```bash
-npm run typecheck
-npm test
-npm run build
+npm run dev
 ```
+
+Les téléchargements sont enregistrés dans `data/media/` et leur état dans `data/downloads.sqlite`. `npm run typecheck`, `npm test` et `npm run build` vérifient le projet.
+

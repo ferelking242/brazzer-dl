@@ -134,14 +134,9 @@ export async function createApp() {
       root,
       prefix: "/",
       wildcard: false,
-      decorateReply: true,
+      decorateReply: false,
     });
-    app.setNotFoundHandler(async (request, reply) => {
-      if (request.url.startsWith("/api/")) {
-        return reply.code(404).send({ error: "Route API introuvable." });
-      }
-      return reply.sendFile("index.html", root);
-    });
+    app.get("/", async (_request, reply) => reply.sendFile("index.html", root));
   }
 
   return app;
