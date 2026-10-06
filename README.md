@@ -1,46 +1,42 @@
-# Brazzers Library Manager
+# Stillroom — Gestionnaire vidéo local
 
-Gestionnaire local privé pour organiser et télécharger des vidéos uniquement lorsque le site autorise explicitement leur téléchargement.
+Gestionnaire local privé pour organiser et télécharger des **fichiers vidéo vers lesquels vous avez le droit de pointer un lien HTTPS direct** (par exemple vos propres exports, des contenus sous licence ouverte, ou un fichier déposé par défaut dans un CDN public).
 
-## État du projet
+L’interface est une bibliothèque locale, sans compte à créer, et un moteur de téléchargement de **liens directs publics uniquement**.
 
-L’application fournit une interface de file d’attente et un moteur de téléchargement pour des liens directs compatibles. La connexion à un compte Brazzers et l’accès aux vidéos VIP ne sont pas implémentés.
+## Ce que l’application fait (et ne fait pas)
 
-Site à évaluer : `https://site-ma.brazzers.com/scenes?addon=162`
+Fait :
 
-Un abonnement VIP ne confirme pas, à lui seul, le droit de copier les vidéos. Avant toute intégration, il faut vérifier les conditions du site et l’existence d’une fonction de téléchargement ou d’une API officielle autorisée. L’accès aux vidéos et la possibilité de les télécharger sont deux choses distinctes.
+- Bibliothèque locale de fichiers vidéo, Fil d’attente avec concurrence limitée, Liste des fichiers enregistrés.
+- Vue **Paramètres** : stockage, règles de téléchargement (concurrence, taille max, reprise partielle), confidentialité, état du service.
+- Connexion, cookies, identifiants, contournement de DRM ou de paywall : **jamais**.
+- Liens directs HTTPS vers des fichiers MP4, WebM, MOV ou MKV, sans paramètres signés.
+- Vérification de sécurité : refus des hostnames locaux, adresses IP, redirections cross-origin, fichiers de plus de 5 Go.
 
-## Stack retenue
+Ne fait pas (et ne fera pas) :
 
-- **Node.js 24 + TypeScript** : même langage côté interface et serveur, types partagés et runtime déjà disponible dans l’environnement.
-- **React + Vite** : interface locale pour la bibliothèque, la file d’attente et l’avancement des tâches.
-- **Tailwind CSS + primitives Radix UI + Lucide React** : composants gratuits et open source.
-- **Fastify** : API locale légère entre l’interface et le gestionnaire de téléchargements.
-- **SQLite** : persistance locale des métadonnées, de l’état des tâches et de leur reprise après redémarrage.
-- **File d’attente persistante avec concurrence limitée** : démarrer avec un seul téléchargement à la fois; permettre pause, reprise, annulation, reprise sur erreur et déduplication.
-- **Système de fichiers local** : destination choisie par l’utilisateur, avec vérification de l’espace disponible et noms de fichiers sûrs.
+- Se connecter à Brazzers, BangBros, ou tout autre site protégé par identification.
+- Télécharger des vidéos d’abonnement VIP ou un fichier protégé par un paywall.
+- Extraire des cookies, sniffer des sessions, contourner un DRM.
+- Utiliser `yt-dlp` ou un extracteur de flux.
 
-En développement, l’interface écoute sur le port `5000` et transmet les appels `/api` au serveur local sur `127.0.0.1:3001`. Redis, PostgreSQL et une architecture cloud ne sont pas nécessaires pour ce premier périmètre.
+L’application reste volontairement neutre : un abonnement payant à un site ne vous donne pas le droit de copier ou de redistribuer les vidéos de ce site. Si vous cherchez à télécharger les contenus d’un abonnement (Brazzers, BangBros, etc.), cette application n’est pas faite pour ça, et ce projet n’ajoutera pas cette fonctionnalité.
 
-La file accepte une URL à la fois, démarre avec une seule tâche concurrente, conserve son état dans SQLite et reprend les fichiers partiels lorsque le serveur supporte les requêtes `Range`.
+## Stack
 
-## Intégration au site
+- **Node.js 24 + TypeScript**
+- **React + Vite** (vignettes, file, paramètres, dock flottant)
+- **Radix UI + Tailwind CSS + Lucide** (libres et open source)
+- **Fastify** (API locale sur `/api`)
+- **SQLite** (`better-sqlite3`) pour la file et l’état persistant
 
-L’application ne se connecte pas à Brazzers. Le bouton du site ouvre une page externe; il ne partage pas la session du navigateur avec l’application.
+En développement, `npm run dev` lance Vite (port 5000) et le serveur API (port 3001, ou `PORT` fourni par l'hébergeur). Les téléchargements sont enregistrés dans `data/media/` et l'état dans `data/downloads.sqlite`.
 
-- Les liens Brazzers et sous-domaines sont bloqués.
-- Seuls les liens HTTPS directs vers des fichiers vidéo MP4, WebM, MOV, M4V ou MKV sont acceptés; pas de cookies, de paramètres signés ou de lien qui exige une authentification.
-- Les adresses IP/locales, réponses qui ne sont pas des vidéos, redirections vers un autre hôte et fichiers de plus de 5 Go sont refusés.
-- Il n’y a ni formulaire de mot de passe, ni extraction de cookies, ni contournement DRM/paywall.
-- `yt-dlp` n’est pas une dépendance de l’application.
-
-Un abonnement VIP ne confirme pas, à lui seul, le droit de copier les vidéos. Une intégration au site ne pourra être ajoutée qu’après confirmation d’un mécanisme officiel et autorisé.
-
-## Lancer en développement
+## Vérifications
 
 ```bash
-npm run dev
+npm run typecheck
+npm test
+npm run build
 ```
-
-Les téléchargements sont enregistrés dans `data/media/` et leur état dans `data/downloads.sqlite`. `npm run typecheck`, `npm test` et `npm run build` vérifient le projet.
-
