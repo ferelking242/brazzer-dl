@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
@@ -38,6 +39,14 @@ export async function createApp() {
   });
 
   await app.register(helmet, { contentSecurityPolicy: false });
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? "https://ferelking242.github.io,http://localhost:5000,http://127.0.0.1:5000")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  await app.register(cors, {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  });
   await app.register(rateLimit, {
     global: false,
     max: 600,
