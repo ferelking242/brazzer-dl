@@ -306,7 +306,7 @@ export default function App() {
         <div className="brand-lockup">
           <div className="brand-symbol"><Library size={17} strokeWidth={1.8} /></div>
           <div className="brand-copy">
-            <div className="brand-name">Stillroom</div>
+            <div className="brand-name">brazzer-dl</div>
             <div className="brand-caption">Espace vidéo privé</div>
           </div>
         </div>

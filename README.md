@@ -1,37 +1,31 @@
-# Stillroom — Gestionnaire vidéo local
+# brazzer-dl
 
-Gestionnaire local privé pour organiser et télécharger des **fichiers vidéo vers lesquels vous avez le droit de pointer un lien HTTPS direct** (par exemple vos propres exports, des contenus sous licence ouverte, ou un fichier déposé par défaut dans un CDN public).
+Gestionnaire vidéo local : file d'attente de **liens HTTPS directs** vers des fichiers vidéo publics (vos propres exports, contenus sous licence ouverte, CDN public), avec reprise et bibliothèque.
 
-L’interface est une bibliothèque locale, sans compte à créer, et un moteur de téléchargement de **liens directs publics uniquement**.
+L'interface est une bibliothèque locale, sans compte à créer.
 
-## Ce que l’application fait (et ne fait pas)
+## Ce que l'application fait (et ne fait pas)
 
 Fait :
 
-- Bibliothèque locale de fichiers vidéo, Fil d’attente avec concurrence limitée, Liste des fichiers enregistrés.
+- Bibliothèque locale de fichiers vidéo, file d'attente avec concurrence limitée, liste des fichiers enregistrés.
 - Vue **Paramètres** : stockage, règles de téléchargement (concurrence, taille max, reprise partielle), confidentialité, état du service.
-- Connexion, cookies, identifiants, contournement de DRM ou de paywall : **jamais**.
 - Liens directs HTTPS vers des fichiers MP4, WebM, MOV ou MKV, sans paramètres signés.
 - Vérification de sécurité : refus des hostnames locaux, adresses IP, redirections cross-origin, fichiers de plus de 5 Go.
 
 Ne fait pas (et ne fera pas) :
 
-- Se connecter à Brazzers, BangBros, ou tout autre site protégé par identification.
-- Télécharger des vidéos d’abonnement VIP ou un fichier protégé par un paywall.
-- Extraire des cookies, sniffer des sessions, contourner un DRM.
-- Utiliser `yt-dlp` ou un extracteur de flux.
+- Se connecter à Brazzers, BangBros ou tout autre site protégé par identification, ni télécharger leurs vidéos d'abonnement VIP.
+- Extraire des cookies, sniffer des sessions, contourner un DRM ou un paywall.
+- Utiliser `yt-dlp` ou tout extracteur de flux.
 
-L’application reste volontairement neutre : un abonnement payant à un site ne vous donne pas le droit de copier ou de redistribuer les vidéos de ce site. Si vous cherchez à télécharger les contenus d’un abonnement (Brazzers, BangBros, etc.), cette application n’est pas faite pour ça, et ce projet n’ajoutera pas cette fonctionnalité.
+Un abonnement payant ne donne pas le droit de copier ou redistribuer les vidéos d'un site. Cette application reste volontairement limitée aux liens directs publics.
 
 ## Stack
 
-- **Node.js 24 + TypeScript**
-- **React + Vite** (vignettes, file, paramètres, dock flottant)
-- **Radix UI + Tailwind CSS + Lucide** (libres et open source)
-- **Fastify** (API locale sur `/api`)
-- **SQLite** (`better-sqlite3`) pour la file et l’état persistant
+- **Node.js 24 + TypeScript**, **React + Vite**, **Radix UI + Tailwind CSS + Lucide**, **Fastify**, **SQLite** (better-sqlite3).
 
-En développement, `npm run dev` lance Vite (port 5000) et le serveur API (port 3001, ou `PORT` fourni par l'hébergeur). Les téléchargements sont enregistrés dans `data/media/` et l'état dans `data/downloads.sqlite`.
+En développement, `npm run dev` construit l'interface et lance un unique process Fastify qui sert à la fois l'UI (`dist/`) et l'API sur le port `5000` (ou le `PORT` injecté par l'hébergeur). Les téléchargements sont dans `data/media/`, l'état dans `data/downloads.sqlite`.
 
 ## Vérifications
 
