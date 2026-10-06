@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DownloadJob, DownloadStats, ServiceHealth } from "../../../src/shared/types";
+import { apiUrl } from "./config";
 
-async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(apiUrl(path), {
     ...init,
     headers: {
       ...(init?.body ? { "content-type": "application/json" } : {}),

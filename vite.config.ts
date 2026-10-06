@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  // GitHub Pages serves the project under /<repo>/, so the asset base must match.
+  base: process.env.VITE_BASE_PATH ?? "/",
   plugins: [react(), tailwindcss()],
   server: {
     host: "0.0.0.0",
@@ -10,11 +12,11 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: true,
     watch: {
-      ignored: ["**/.local/**", "**/.agents/**", "**/data/**", "**/dist/**"],
+      ignored: ["**/.agents/**", "**/data/**", "**/dist/**"],
     },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3001",
+        target: process.env.API_PROXY_TARGET ?? "http://127.0.0.1:3001",
         changeOrigin: true,
       },
     },
