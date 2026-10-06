@@ -1,8 +1,8 @@
 {
-  "name": "brazzers-library-manager",
+  "name": "brazzer-dl",
   "version": "0.1.0",
   "private": true,
-  "description": "Gestionnaire local de téléchargements vidéo autorisés.",
+  "description": "Téléchargeur local pour Brazzers : file d'attente, reprise et déduplication.",
   "main": "server/index.ts",
   "scripts": {
     "dev": "node scripts/dev.mjs",

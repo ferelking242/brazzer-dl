@@ -1,6 +1,6 @@
-# Brazzers Library Manager
+# brazzer-dl
 
-Gestionnaire local privé pour organiser et télécharger des vidéos uniquement lorsque le site autorise explicitement leur téléchargement.
+Téléchargeur local pour Brazzers : file d’attente, reprise et déduplication des téléchargements.
 
 ## État du projet
 
