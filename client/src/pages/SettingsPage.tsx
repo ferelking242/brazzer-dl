@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, KeyRound, LoaderCircle, LogOut, Search, ShieldCheck, X } from "lucide-react";
+import { Check, KeyRound, Link2, LoaderCircle, LogOut, Plug, Search, ShieldCheck, X } from "lucide-react";
 import { PROVIDERS, PROVIDER_CATEGORIES, providerInitials, type Provider, type ProviderCategory } from "../lib/providers";
 import { useSession } from "../lib/session";
+import { clearBackendBaseUrl, getBackendBaseUrl, setBackendBaseUrl } from "../lib/config";
+import { useServiceHealth } from "../lib/api";
 
 type CategoryFilter = "all" | ProviderCategory;
 
@@ -122,6 +124,74 @@ function ProviderLoginDialog({ provider }: { provider: Provider }) {
   );
 }
 
+export function BackendConnection() {
+  const healthQuery = useServiceHealth();
+  const [value, setValue] = useState(() => getBackendBaseUrl());
+  const [saved, setSaved] = useState(false);
+
+  const connected = !healthQuery.isLoading && !healthQuery.isError && !!healthQuery.data?.ok;
+  const statusLabel = healthQuery.isLoading
+    ? "Vérification…"
+    : connected
+      ? `Connecté · ${healthQuery.data?.service ?? "service"}`
+      : "Aucun backend joignable";
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBackendBaseUrl(value);
+    setValue(getBackendBaseUrl());
+    setSaved(true);
+    void healthQuery.refetch();
+    window.setTimeout(() => setSaved(false), 2500);
+  }
+
+  function handleReset() {
+    clearBackendBaseUrl();
+    setValue(getBackendBaseUrl());
+    setSaved(false);
+    void healthQuery.refetch();
+  }
+
+  return (
+    <section className="settings-section" aria-labelledby="backend-heading">
+      <div className="section-head">
+        <div>
+          <h2 className="section-title" id="backend-heading">Connexion au backend</h2>
+          <p className="section-subtitle">Reliez ce frontend à votre serveur brazzer-dl</p>
+        </div>
+        <span className={`health-pill ${connected ? "" : "offline"}`}>
+          <span className={`health-dot ${connected ? "" : "offline"}`} />
+          {statusLabel}
+        </span>
+      </div>
+
+      <form className="backend-form" onSubmit={handleSubmit}>
+        <label className="form-label" htmlFor="backend-url">Adresse du backend</label>
+        <div className="backend-input-row">
+          <span className="backend-input-icon"><Plug size={15} /></span>
+          <input
+            id="backend-url"
+            className="url-input backend-input"
+            type="url"
+            inputMode="url"
+            placeholder="https://votre-backend.example.org"
+            value={value}
+            onChange={(event) => { setValue(event.target.value); setSaved(false); }}
+          />
+          <button className="button button-primary" type="submit"><Link2 size={15} />Enregistrer</button>
+          {value.trim() && (
+            <button className="button button-quiet" type="button" onClick={handleReset}>Réinitialiser</button>
+          )}
+        </div>
+        <div className="form-hint">
+          <ShieldCheck size={13} />
+          {saved ? "Adresse enregistrée sur cet appareil." : "Laissez vide pour utiliser un backend local via le proxy de développement."}
+        </div>
+      </form>
+    </section>
+  );
+}
+
 export function SettingsPage({ onOpenAccount }: { onOpenAccount: () => void }) {
   const { connectedCount } = useSession();
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -151,6 +221,8 @@ export function SettingsPage({ onOpenAccount }: { onOpenAccount: () => void }) {
           <ShieldCheck size={15} />{connectedCount} compte{connectedCount === 1 ? "" : "s"} lié{connectedCount === 1 ? "" : "s"}
         </button>
       </section>
+
+      <BackendConnection />
 
       <section className="settings-section" aria-labelledby="providers-heading">
         <div className="section-head">

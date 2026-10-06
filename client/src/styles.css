@@ -242,6 +242,13 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* Providers */
 .settings-section { margin-top: 34px; }
+.backend-form { margin-top: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 13px; background: #fffefa; }
+.backend-form .form-label { margin-top: 0; }
+.backend-input-row { display: flex; align-items: center; gap: 9px; }
+.backend-input-icon { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 44px; border: 1px solid #d9ded6; border-radius: 8px; color: #54706a; background: #f1f4ef; }
+.backend-input { flex: 1; min-width: 0; }
+.backend-input-row .button { flex: 0 0 auto; height: 44px; }
+.health-pill.offline { color: #8a4a44; border-color: #e9c8c2; background: #fbefec; }
 .provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 13px; margin-top: 17px; }
 .provider-card {
   display: flex; flex-direction: column; gap: 12px; padding: 16px;
@@ -400,6 +407,9 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   .account-metrics { width: 100%; margin-left: 0; justify-content: space-between; }
   .account-metric { align-items: flex-start; }
   .provider-grid { grid-template-columns: 1fr; }
+  .backend-input-row { flex-wrap: wrap; }
+  .backend-input { flex-basis: calc(100% - 49px); }
+  .backend-input-row .button { flex: 1 1 auto; }
   .dock { bottom: 14px; }
   .dock-item { min-width: 66px; padding: 8px 11px 7px; }
   .mobile-footer { display: block; margin: 22px 0 0; color: #9aa39e; text-align: center; font: 9px var(--font-mono); letter-spacing: .03em; }
