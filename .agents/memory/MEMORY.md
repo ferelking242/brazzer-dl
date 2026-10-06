@@ -1,0 +1,1 @@
+- [Vite watcher scope](vite-watcher-scope.md) — exclude Replit’s internal workspace assets from Vite/Tailwind scanning to prevent full-page reload loops.
