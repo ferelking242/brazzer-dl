@@ -57,7 +57,7 @@ export async function createApp() {
     ok: true,
     service: "video-manager",
     siteIntegration: "not-connected",
-    downloadMode: "public-direct-links-only",
+    downloadMode: "public-links-and-hls",
   }));
 
   app.get("/api/jobs", async () => jobsRepository.list().map(toPublicJob));

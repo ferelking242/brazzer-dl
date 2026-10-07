@@ -35,5 +35,5 @@ export interface ServiceHealth {
   ok: boolean;
   service: string;
   siteIntegration: "not-connected";
-  downloadMode: "public-direct-links-only";
+  downloadMode: "public-links-and-hls";
 }

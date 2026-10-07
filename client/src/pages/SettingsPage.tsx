@@ -288,9 +288,9 @@ export function SettingsPage({ onOpenAccount }: { onOpenAccount: () => void }) {
         <div className="access-notice" aria-label="Limites du moteur">
           <ShieldCheck className="notice-icon" size={18} />
           <div className="notice-copy">
-            <div className="notice-title">Liens directs uniquement</div>
+            <div className="notice-title">Liens directs et flux HLS</div>
             <p className="notice-text">
-              Le moteur accepte aujourd’hui les liens vidéo HTTPS publics. La connexion authentifiée aux fournisseurs, la reprise de session et le téléchargement protégé arrivent avec le backend.
+              Le moteur accepte les liens vidéo HTTPS publics et les playlists HLS (.m3u8) publiques : les segments sont téléchargés en parallèle, déchiffrés si nécessaire, puis assemblés en MP4. La connexion authentifiée aux fournisseurs n’est pas prise en charge.
             </p>
           </div>
         </div>

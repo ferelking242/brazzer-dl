@@ -19,6 +19,7 @@ Un abonnement VIP ne confirme pas, à lui seul, le droit de copier les vidéos. 
 - **SQLite** : persistance locale des métadonnées, de l’état des tâches et de leur reprise après redémarrage.
 - **File d’attente persistante avec concurrence limitée** : démarrer avec un seul téléchargement à la fois; permettre pause, reprise, annulation, reprise sur erreur et déduplication.
 - **Système de fichiers local** : destination choisie par l’utilisateur, avec vérification de l’espace disponible et noms de fichiers sûrs.
+- **ffmpeg** : assemblage des segments HLS en MP4 sans réencodage. Requis pour les flux HLS (`ffmpeg` doit être dans le `PATH`, ou `FFMPEG_PATH` défini).
 
 En développement, l’interface écoute sur le port `5000` et transmet les appels `/api` au serveur local sur `127.0.0.1:3001`. Redis, PostgreSQL et une architecture cloud ne sont pas nécessaires pour ce premier périmètre.
 
@@ -29,8 +30,10 @@ La file accepte une URL à la fois, démarre avec une seule tâche concurrente, 
 L’application ne se connecte pas à Brazzers. Le bouton du site ouvre une page externe; il ne partage pas la session du navigateur avec l’application.
 
 - Les liens Brazzers et sous-domaines sont bloqués.
-- Seuls les liens HTTPS directs vers des fichiers vidéo MP4, WebM, MOV, M4V ou MKV sont acceptés; pas de cookies, de paramètres signés ou de lien qui exige une authentification.
+- Les fichiers HTTPS directs (MP4, WebM, MOV, M4V, MKV) et les playlists HLS (`.m3u8`) publiques sont acceptés; pas de cookies, de paramètres signés ou de lien qui exige une authentification.
+- Pour un flux HLS : la variante au débit le plus élevé est choisie, les segments sont téléchargés en parallèle (5 à la fois, 3 essais chacun) et déchiffrés si la playlist utilise AES-128, puis assemblés en MP4 sans réencodage (`ffmpeg -c copy`).
 - Les adresses IP/locales, réponses qui ne sont pas des vidéos, redirections vers un autre hôte et fichiers de plus de 5 Go sont refusés.
+- Les flux protégés par DRM (Widevine/PlayReady, `SAMPLE-AES`) ne sont pas pris en charge.
 - Il n’y a ni formulaire de mot de passe, ni extraction de cookies, ni contournement DRM/paywall.
 - `yt-dlp` n’est pas une dépendance de l’application.
 

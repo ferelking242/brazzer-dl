@@ -8,10 +8,35 @@ import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
 import type { DownloadJob, JobStatus } from "../src/shared/types";
 import { jobsRepository, storageDirectory } from "./database";
-import { assertSafeRedirect, MAX_FILE_BYTES, resolveMediaUrl, validateMediaUrl } from "./security";
+import { downloadHlsToMp4 } from "./hls";
+import { assertSafeRedirect, MAX_FILE_BYTES, publicLookup, resolveMediaUrl, resolveStreamUrl, validateMediaUrl, validateStreamUrlShape } from "./security";
 
 const MAX_ACTIVE_OR_QUEUED = 50;
 const MAX_REDIRECTS = 4;
+
+function isHlsUrl(url: URL): boolean {
+  return path.extname(url.pathname).toLowerCase() === ".m3u8";
+}
+
+async function resolveJobUrl(rawUrl: string): Promise<URL> {
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("Saisissez une adresse valide vers un fichier vidéo ou un flux HLS.");
+  }
+  if (isHlsUrl(parsed)) {
+    const streamUrl = validateStreamUrlShape(rawUrl);
+    await resolveStreamUrl(rawUrl);
+    return streamUrl;
+  }
+  return validateMediaUrl(rawUrl);
+}
+
+function hlsFileName(url: URL): string {
+  const name = safeFileName(url);
+  return name.replace(/\.m3u8$/i, "") + ".mp4";
+}
 
 function safeFileName(url: URL): string {
   let name = path.basename(url.pathname);
@@ -53,10 +78,7 @@ async function fetchWithSafeRedirects(
           method: "GET",
           headers,
           signal,
-          lookup: (_hostname, _options, callback) => {
-            const address = resolved.addresses[0];
-            callback(null, address.address, address.family);
-          },
+          lookup: publicLookup(resolved.addresses),
         },
         resolve,
       );
@@ -87,17 +109,18 @@ export class DownloadManager {
   }
 
   async enqueue(rawUrl: string): Promise<DownloadJob> {
-    const url = await validateMediaUrl(rawUrl);
+    const url = await resolveJobUrl(rawUrl);
     const outstanding = jobsRepository
       .list()
       .filter((job) => job.status === "queued" || job.status === "downloading").length;
     if (outstanding >= MAX_ACTIVE_OR_QUEUED) {
       throw new Error(`La file est limitée à ${MAX_ACTIVE_OR_QUEUED} téléchargements en cours ou en attente.`);
     }
+    const hls = isHlsUrl(url);
     const job = jobsRepository.create({
       id: randomUUID(),
       url: url.toString(),
-      fileName: safeFileName(url),
+      fileName: hls ? hlsFileName(url) : safeFileName(url),
       sourceHost: url.hostname,
     });
     this.start();
@@ -151,6 +174,60 @@ export class DownloadManager {
     return jobsRepository.remove(id);
   }
 
+  private async downloadHls(job: DownloadJob): Promise<void> {
+    const controller = new AbortController();
+    this.controllers.set(job.id, controller);
+    jobsRepository.update(job.id, { status: "downloading", error: null, speedBytesPerSecond: 0 });
+    const partialPath = this.partialPath(job.id);
+    const workDirectory = path.join(storageDirectory, `${job.id}-hls`);
+
+    try {
+      await mkdir(storageDirectory, { recursive: true });
+      await rm(partialPath, { force: true });
+      await downloadHlsToMp4({
+        manifestUrl: job.url,
+        workDirectory,
+        outputPath: partialPath,
+        signal: controller.signal,
+        ffmpegPath: process.env.FFMPEG_PATH,
+        onProgress: ({ downloadedBytes, totalBytes, speedBytesPerSecond }) => {
+          jobsRepository.update(job.id, { downloadedBytes, totalBytes, speedBytesPerSecond });
+        },
+      });
+
+      const current = jobsRepository.get(job.id);
+      if (!current || current.status !== "downloading") return;
+
+      const completedPath = this.completePath(job);
+      await rename(partialPath, completedPath);
+      const size = (await stat(completedPath)).size;
+      jobsRepository.update(job.id, {
+        status: "completed",
+        downloadedBytes: size,
+        totalBytes: size,
+        speedBytesPerSecond: 0,
+        error: null,
+        completedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      const current = jobsRepository.get(job.id);
+      if (current?.status === "cancelled") {
+        await rm(partialPath, { force: true });
+      } else if (current?.status === "paused" || controller.signal.aborted) {
+        jobsRepository.update(job.id, { status: "paused", speedBytesPerSecond: 0 });
+      } else {
+        jobsRepository.update(job.id, {
+          status: "failed",
+          speedBytesPerSecond: 0,
+          error: readableError(error),
+        });
+      }
+    } finally {
+      await rm(workDirectory, { recursive: true, force: true });
+      this.controllers.delete(job.id);
+    }
+  }
+
   private partialPath(id: string): string {
     return path.join(storageDirectory, `${id}.part`);
   }
@@ -175,6 +252,11 @@ export class DownloadManager {
   }
 
   private async download(job: DownloadJob): Promise<void> {
+    const requestUrl = new URL(job.url);
+    if (isHlsUrl(requestUrl)) {
+      await this.downloadHls(job);
+      return;
+    }
     const controller = new AbortController();
     this.controllers.set(job.id, controller);
     jobsRepository.update(job.id, { status: "downloading", error: null, speedBytesPerSecond: 0 });
@@ -192,7 +274,6 @@ export class DownloadManager {
         throw new Error("Le fichier partiel dépasse la limite de 5 Go par fichier.");
       }
 
-      const requestUrl = new URL(job.url);
       const headers: Record<string, string> = {
         accept: "video/*,application/octet-stream;q=0.9",
         "accept-encoding": "identity",

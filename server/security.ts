@@ -1,4 +1,5 @@
 import { lookup } from "node:dns/promises";
+import type { LookupFunction } from "node:net";
 import { isIP } from "node:net";
 import path from "node:path";
 
@@ -54,6 +55,43 @@ export function validateMediaUrlShape(rawUrl: string): URL {
   if (url.username || url.password) throw new Error("Les liens contenant des identifiants ne sont pas acceptés.");
   if (url.search || url.hash) throw new Error("Les liens signés ou contenant des paramètres ne sont pas acceptés.");
   if (url.port && url.port !== "443") throw new Error("Seul le port HTTPS standard est accepté.");
+  assertAllowedHost(hostname);
+
+  const extension = path.extname(url.pathname).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(extension)) {
+    throw new Error("Utilisez un lien HTTPS direct vers un fichier MP4, WebM, MOV, M4V ou MKV.");
+  }
+
+  return url;
+}
+
+// HLS playlists and segments frequently carry signed query strings and may use
+// arbitrary file extensions (or none), so this shape check allows parameters
+// and any path while keeping the same host and protocol restrictions.
+export function validateStreamUrlShape(rawUrl: string): URL {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("Adresse de flux invalide.");
+  }
+  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+  if (url.protocol !== "https:") throw new Error("Seuls les flux HTTPS sont acceptés.");
+  if (url.username || url.password) throw new Error("Les liens contenant des identifiants ne sont pas acceptés.");
+  if (url.port && url.port !== "443") throw new Error("Seul le port HTTPS standard est accepté.");
+  assertAllowedHost(hostname);
+  return url;
+}
+
+export function assertStreamSegmentUrl(rawUrl: string, playlistHost: string): URL {
+  const url = validateStreamUrlShape(rawUrl);
+  if (url.hostname.toLowerCase() !== playlistHost.toLowerCase()) {
+    throw new Error("Le flux référence un autre hôte que celui de la playlist.");
+  }
+  return url;
+}
+
+function assertAllowedHost(hostname: string): void {
   if (hostname === "brazzers.com" || hostname.endsWith(".brazzers.com")) {
     throw new Error("Les liens Brazzers ne sont pas pris en charge. Utilisez uniquement une méthode officielle de téléchargement.");
   }
@@ -66,13 +104,6 @@ export function validateMediaUrlShape(rawUrl: string): URL {
   ) {
     throw new Error("Les liens locaux et les adresses IP ne sont pas acceptés.");
   }
-
-  const extension = path.extname(url.pathname).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.has(extension)) {
-    throw new Error("Utilisez un lien HTTPS direct vers un fichier MP4, WebM, MOV, M4V ou MKV.");
-  }
-
-  return url;
 }
 
 export async function validateMediaUrl(rawUrl: string): Promise<URL> {
@@ -94,6 +125,32 @@ export async function resolveMediaUrl(rawUrl: string): Promise<{
     throw new Error("L’hôte doit pointer uniquement vers des adresses Internet publiques.");
   }
   return { url, addresses };
+}
+
+export async function resolveStreamUrl(rawUrl: string): Promise<{
+  url: URL;
+  addresses: Array<{ address: string; family: number }>;
+}> {
+  const url = validateStreamUrlShape(rawUrl);
+  const addresses = await resolvePublicAddresses(url.hostname);
+  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicAddress(address))) {
+    throw new Error("L’hôte doit pointer uniquement vers des adresses Internet publiques.");
+  }
+  return { url, addresses };
+}
+
+export type ResolvedAddress = { address: string; family: number };
+
+// Node calls a custom lookup with `all: true` for happy-eyeballs, in which case
+// the callback must receive the full address list rather than a single entry.
+export function publicLookup(addresses: ResolvedAddress[]): LookupFunction {
+  return ((_hostname, options, callback) => {
+    if (typeof options === "object" && options.all) {
+      callback(null, addresses);
+      return;
+    }
+    callback(null, addresses[0].address, addresses[0].family);
+  }) as LookupFunction;
 }
 
 async function resolvePublicAddresses(hostname: string) {

@@ -313,7 +313,7 @@ export function LibraryPage({
                 <div>
                   <Dialog.Title className="dialog-title">Ajouter un média</Dialog.Title>
                   <Dialog.Description id="add-download-description" className="dialog-description">
-                    Collez le lien HTTPS public d’un fichier vidéo que vous êtes autorisé à enregistrer.
+                    Collez le lien HTTPS public d’un fichier vidéo ou d’un flux HLS que vous êtes autorisé à enregistrer.
                   </Dialog.Description>
                 </div>
                 <Dialog.Close asChild>
@@ -321,7 +321,7 @@ export function LibraryPage({
                 </Dialog.Close>
               </div>
               <form onSubmit={handleAddSubmit}>
-                <label className="form-label" htmlFor="download-url">Lien direct vers la vidéo</label>
+                <label className="form-label" htmlFor="download-url">Lien direct ou flux HLS</label>
                 <input
                   autoFocus
                   id="download-url"
@@ -329,16 +329,16 @@ export function LibraryPage({
                   type="url"
                   inputMode="url"
                   autoComplete="url"
-                  placeholder="https://files.example.org/video.mp4"
+                  placeholder="https://files.example.org/video.mp4 ou .../master.m3u8"
                   value={url}
                   onChange={(event) => { setUrl(event.target.value); setFormError(""); }}
                   disabled={createDownload.isPending}
                   required
                 />
-                <div className="form-hint"><LockKeyhole size={13} />Le lien doit viser directement un fichier vidéo public, sans authentification.</div>
+                <div className="form-hint"><LockKeyhole size={13} />Fichier vidéo public ou playlist HLS (.m3u8), sans authentification.</div>
                 <div className="dialog-note">
                   <CircleAlert size={14} />
-                  <span>Les comptes de fournisseurs se gèrent dans Réglages. Les flux protégés, liens signés ou sources privées ne sont pas encore pris en charge par le moteur.</span>
+                  <span>Les flux HLS sont téléchargés segment par segment puis assemblés en MP4. Les liens protégés par DRM ou exigeant une authentification ne sont pas pris en charge.</span>
                 </div>
                 {formError && <p className="form-error" role="alert">{formError}</p>}
                 <div className="dialog-actions">
@@ -367,7 +367,7 @@ export function LibraryPage({
         <div className="notice-copy">
           <div className="notice-title">Bibliothèque locale, comptes centralisés</div>
           <p className="notice-text">
-            Vos médias restent sur cet appareil. Connectez vos comptes de fournisseurs dans Réglages pour préparer l’intégration ; le moteur n’accepte pour l’instant que les liens vidéo HTTPS publics.
+            Vos médias restent sur cet appareil. Connectez vos comptes de fournisseurs dans Réglages pour préparer l’intégration ; le moteur accepte les liens vidéo HTTPS publics et les flux HLS publics.
           </p>
         </div>
         <button className="notice-link" type="button" onClick={onOpenSettings}>
